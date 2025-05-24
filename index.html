@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giggle Watts - Emotional Energy Puzzles</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="info">
+        <h2>🔋 Giggle Watts</h2>
+        <p><strong>Route emotional energy to power the goal!</strong></p>
+        <div class="energy-type" id="happy-info">
+            <span class="energy-dot" style="background: #ffd700;"></span>
+            <strong>Happy</strong> - Spreads joy, makes neighbors giggle
+        </div>
+        <div class="energy-type" id="calm-info">
+            <span class="energy-dot" style="background: #4169e1;"></span>
+            <strong>Calm</strong> - Flows smoothly, creates bridges
+        </div>
+        <div class="energy-type" id="excited-info">
+            <span class="energy-dot" style="background: #ff6347;"></span>
+            <strong>Excited</strong> - High energy, risk of burnout
+        </div>
+        <p style="margin-top: 15px;"><em>💡 Tip: Different components need different emotions!</em></p>
+    </div>
+    
+    <div id="level-info">Level 1: Learn the Moods</div>
+    
+    <div id="toolbar">
+        <div class="tool selected" data-type="pipe" onclick="selectTool('pipe')">
+            ┃
+            <span class="tool-tooltip">Straight Pipe</span>
+        </div>
+        <div class="tool" data-type="corner" onclick="selectTool('corner')">
+            ┗
+            <span class="tool-tooltip">Corner Pipe</span>
+        </div>
+        <div class="tool" data-type="tjunction" onclick="selectTool('tjunction')">
+            ┻
+            <span class="tool-tooltip">T-Junction</span>
+        </div>
+        <div class="tool" data-type="cross" onclick="selectTool('cross')">
+            ╋
+            <span class="tool-tooltip">Cross Junction</span>
+        </div>
+        <div class="tool" data-type="nervous" onclick="selectTool('nervous')">
+            😰
+            <span class="tool-tooltip">Nervous Pipe - Needs Calm</span>
+        </div>
+        <div class="tool" data-type="sleepy" onclick="selectTool('sleepy')">
+            😴
+            <span class="tool-tooltip">Sleepy Switch - Needs Excitement</span>
+        </div>
+        <div class="tool" data-type="grumpy" onclick="selectTool('grumpy')">
+            😠
+            <span class="tool-tooltip">Grumpy Gate - Needs Happiness</span>
+        </div>
+        <div class="tool" data-type="delete" onclick="selectTool('delete')">
+            🗑️
+            <span class="tool-tooltip">Delete</span>
+        </div>
+    </div>
+    
+    <!-- Audio Element -->
+    <audio id="bg-music" loop>
+        <source src="./assets/audio/music/Nihilore - The Bright Lights of Summer.mp3" type="audio/mpeg">
+        Your browser does not support audio.
+    </audio>
+
+    <!-- Music Controls -->
+    <div class="music-controls">
+        <button id="music-toggle">Play Music</button>
+        <div class="volume-control">
+            <label for="volume-slider">Volume:</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="5">
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="startSimulation()">⚡ Start Energy Flow</button>
+        <button onclick="resetLevel()">🔄 Reset</button>
+        <button onclick="changeEnergyType()">🎨 Change Energy: <span id="energy-label">Happy</span></button>
+    </div>
+    
+    <div id="victory">
+        <h1>🎉 Success!</h1>
+        <p>You mastered the emotions!</p>
+        <button onclick="nextLevel()">Next Level</button>
+    </div>
+
+    <!-- Include Three.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Include game modules -->
+    <script src="energy-types.js"></script>
+    <script src="levels.js"></script>
+    <script src="audio.js"></script>
+    <script src="utils.js"></script>
+    <script src="effects.js"></script>
+    <script src="component.js"></script>
+    <script src="energy-particle.js"></script>
+    <script src="scene.js"></script>
+    <script src="input.js"></script>
+    <script src="ui.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
