@@ -175,7 +175,7 @@ class Component {
         const texture = new THREE.CanvasTexture(canvas);
         const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
         const sprite = new THREE.Sprite(spriteMaterial);
-        sprite.scale.set(0.5, 0.5, 1);
+        sprite.scale.set(0.75, 0.75, 1);
         sprite.position.z = 0.2;
         group.add(sprite);
         
@@ -248,6 +248,7 @@ class Component {
     
     rotate() {
         if (this.type === 'source' || this.type === 'goal') return;
+        console.log(`Component:  ${this.type} \n Angle: ${this.rotation}`)
         
         this.rotation = (this.rotation + 90) % 360;
         this.mesh.rotation.z = this.rotation * Math.PI / 180;

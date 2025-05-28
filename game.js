@@ -15,7 +15,7 @@ let currentLevel = 0;
 let raycaster, mouse;
 let highlightMesh;
 let componentHint = null;
-let currentTimeout = 5000; // 5 seconds initially
+let currentTimeout = 5000; // 5 seconds
 let lastGoalEnergy = 0;
 let energyProgressCount = 0;
 
@@ -39,7 +39,7 @@ function initGame() {
     document.body.appendChild(componentHint);
 
     // Load first level
-    loadLevel(0);
+    loadLevel(2);
 
     // Initialize input handlers
     initInput();
@@ -54,8 +54,9 @@ function initGame() {
 // Main game functions
 function startSimulation() {
     if (isSimulating) return;
-
-    debugGridConfig(); // Output grid info to console
+    
+    // Output grid info to console
+    debugGridConfig(); 
     
     isSimulating = true;
     goalReached = false;
@@ -227,24 +228,6 @@ function changeEnergyType() {
     updateEnergyUI();
 }
 
-// function updateEnergyUI() {
-//     // Update button label
-//     document.getElementById('energy-label').textContent = 
-//         currentEnergyType.charAt(0).toUpperCase() + currentEnergyType.slice(1);
-
-//     // Update active energy info
-//     document.querySelectorAll('.energy-type').forEach(el => el.classList.remove('active'));
-//     document.getElementById(`${currentEnergyType}-info`).classList.add('active');
-
-//     // Update source visual
-//     const source = components.find(c => c.type === 'source');
-//     if (source) {
-//         source.material.emissive = new THREE.Color(energyTypes[currentEnergyType].color);
-//         source.material.emissiveIntensity = 0.3;
-//         source.giggle();
-//     }
-// }
-
 function nextLevel() {
     currentLevel = (currentLevel + 1) % levels.length;
     resetLevel();
@@ -256,31 +239,6 @@ function selectTool(tool) {
     document.querySelectorAll('.tool').forEach(t => t.classList.remove('selected'));
     document.querySelector(`[data-type="${tool}"]`).classList.add('selected');
 }
-
-// Moved to ui.js
-// function showHint(text) {
-//     const hint = document.createElement('div');
-//     hint.style.cssText = `
-//         position: absolute;
-//         top: 80px;
-//         left: 50%;
-//         transform: translateX(-50%);
-//         background: rgba(255, 255, 255, 0.9);
-//         color: black;
-//         padding: 15px 25px;
-//         border-radius: 20px;
-//         font-size: 16px;
-//         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-//         animation: slideDown 0.5s ease-out;
-//     `;
-//     hint.textContent = text;
-//     document.body.appendChild(hint);
-
-//     setTimeout(() => {
-//         hint.style.animation = 'slideUp 0.5s ease-out';
-//         setTimeout(() => document.body.removeChild(hint), 500);
-//     }, 5000);
-// }
 
 function loadLevel(levelIndex) {
 
@@ -352,9 +310,9 @@ function loadLevel(levelIndex) {
 function animate() {
     requestAnimationFrame(animate);
 
-    if (energyParticles.length > 0) {
-        console.log(`Active particles: ${energyParticles.length}`);
-    }
+    // if (energyParticles.length > 0) {
+    //     console.log(`Active particles: ${energyParticles.length}`);
+    // }
 
     // Update all particles first
     energyParticles.forEach(particle => particle.update());
