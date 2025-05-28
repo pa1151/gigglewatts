@@ -204,6 +204,12 @@ class EnergyParticle {
     }
 
     handleObstacle(obstacle, nextPos) {
+        // Check if calm energy can bridge over obstacle
+        if (this.type === 'calm' && energyTypes.calm.canBridge) {
+            this.createBridgeAndContinue(nextPos);
+            return;
+        }
+        
         // Excited energy can power through obstacles
         if (this.canPowerThrough()) {
             this.powerThroughObstacle(nextPos);
@@ -232,7 +238,7 @@ class EnergyParticle {
     handleComponent(component, nextPos) {
         const enterDirection = getOppositeDirection(this.direction);
         
-        if (component.canConnect(enterDirection)) {
+        if (component.canConnect(enterDirection, this.type)) {
             this.enterComponent(component, nextPos);
         } else {
             this.log(`Cannot enter ${component.type} from ${enterDirection}`);

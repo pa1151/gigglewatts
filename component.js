@@ -418,7 +418,12 @@ class Component {
         });
     }
     
-    canConnect(direction) {
+    canConnect(direction, energyType = null) {
+        // Special case: nervous components allow calm energy even when blocking
+        if (this.type === 'nervous' && energyType === 'calm') {
+            return this.connections[direction];
+        }
+        
         if (this.isBlocking || this.burnedOut) return false;
         return this.connections[direction];
     }

@@ -17,7 +17,7 @@ class Bridge {
         
         this.mesh = new THREE.Mesh(geometry, material);
         const worldPos = gridToWorldPosition(x, y);
-        this.mesh.position.set(worldPos.x, worldPos.y, -0.05);
+        this.mesh.position.set(worldPos.x, worldPos.y, 0.2);
         this.mesh.rotation.x = -Math.PI / 2;
         scene.add(this.mesh);
         
