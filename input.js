@@ -3,7 +3,7 @@
 function initInput() {
     // Mouse interaction
     renderer.domElement.addEventListener('click', onMouseClick);
-    renderer.domElement.addEventListener('mousemove', onMouseMove);
+    //renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('contextmenu', onRightClick);
     
     // Keyboard shortcuts
@@ -19,16 +19,39 @@ function initInput() {
     renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
-function onMouseMove(event) {
-    // Update mouse coordinates for raycasting
+function onMouseClick(event) {
+    if (isSimulating) return;
+    
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
-    // Handle component hover effects
-    handleComponentHover(event);
+    raycaster.setFromCamera(mouse, camera);
     
-    // Handle grid highlight
-    handleGridHighlight();
+    // Check for component clicks first
+    const meshes = components.map(c => c.mesh.children[0]);
+    const intersects = raycaster.intersectObjects(meshes);
+    
+    if (intersects.length > 0) {
+        const component = components.find(c => c.mesh.children[0] === intersects[0].object);
+        if (component) {
+            // Don't allow interaction with pre-placed components
+            if (component.isPrePlaced) {
+                showHint("This component is fixed in place!");
+                return;
+            }
+            
+            // Handle regular components
+            if (selectedTool === 'delete') {
+                deleteComponent(component);
+            } else {
+                rotateComponent(component);
+            }
+        }
+        return;
+    }
+    
+    // Otherwise, place new component
+    placeComponent(event);
 }
 
 function handleComponentHover(event) {
@@ -125,7 +148,13 @@ function onRightClick(event) {
     
     if (intersects.length > 0) {
         const component = components.find(c => c.mesh.children[0] === intersects[0].object);
-        if (component && component.type !== 'source' && component.type !== 'goal') {
+        if (component) {
+            // Don't allow deletion of pre-placed components
+            if (component.isPrePlaced) {
+                showHint("This component cannot be removed!");
+                return;
+            }
+            
             deleteComponent(component);
         }
     }
@@ -161,10 +190,22 @@ function placeComponent(event) {
 }
 
 function rotateComponent(component) {
+    // Additional check in rotate function
+    if (component.isPrePlaced) {
+        showHint("This component cannot be rotated!");
+        return;
+    }
+    
     component.rotate();
 }
 
 function deleteComponent(component) {
+    // Additional check in delete function
+    if (component.isPrePlaced) {
+        showHint("This component cannot be deleted!");
+        return;
+    }
+    
     component.destroy();
     removeFromArray(components, component);
     console.log('playing remove audio');

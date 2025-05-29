@@ -39,7 +39,7 @@ function initGame() {
     document.body.appendChild(componentHint);
 
     // Load first level
-    loadLevel(2);
+    loadLevel(0);
 
     // Initialize input handlers
     initInput();
@@ -54,14 +54,14 @@ function initGame() {
 // Main game functions
 function startSimulation() {
     if (isSimulating) return;
-    
+
     // Output grid info to console
-    debugGridConfig(); 
-    
+    debugGridConfig();
+
     isSimulating = true;
     goalReached = false;
     energyParticles = [];
-    
+
     // Reset component states
     components.forEach(c => {
         c.energy = 0;
@@ -76,23 +76,23 @@ function startSimulation() {
             c.updatePowerMeter();
         }
     });
-    
+
     // Find source
     const source = components.find(c => c.type === 'source');
     if (source) {
         source.updateMood(currentEnergyType, currentEnergyType);
-        
+
         // Dynamic timeout variables
         let lastGoalEnergy = 0;
         let energyProgressCount = 0;
-        
+
         // Emit particles
         const emitInterval = setInterval(() => {
             if (!isSimulating) {
                 clearInterval(emitInterval);
                 return;
             }
-            
+
             // Emit in all connected directions
             if (source.connections.top) {
                 energyParticles.push(new EnergyParticle(source.x, source.y, 'up', currentEnergyType));
@@ -106,20 +106,20 @@ function startSimulation() {
             if (source.connections.right) {
                 energyParticles.push(new EnergyParticle(source.x, source.y, 'right', currentEnergyType));
             }
-            
+
             source.giggle();
             playSound('energyFlow', 0.1, 0.8 + Math.random() * 0.4);
         }, 1000);
-        
+
         // Initial failure timeout (5 seconds)
         let failureTimeout = setTimeout(() => {
             clearInterval(emitInterval);
             clearInterval(checkInterval);
             isSimulating = false;
-            
+
             if (!goalReached) {
                 playSound('denied', 0.5);
-                
+
                 const goal = components.find(c => c.type === 'goal');
                 if (goal && goal.energy > 0) {
                     showHint(`Almost there! The goal was ${Math.floor(goal.energy / goal.maxEnergy * 100)}% powered.`);
@@ -128,36 +128,36 @@ function startSimulation() {
                 }
             }
         }, 5000);
-        
+
         // Check interval with dynamic timeout extension
         let checkInterval = setInterval(() => {
             const goal = components.find(c => c.type === 'goal');
-            
+
             // If goal is receiving energy, extend the timeout
             if (goal && goal.energy > lastGoalEnergy) {
                 clearTimeout(failureTimeout);
                 lastGoalEnergy = goal.energy;
                 energyProgressCount++;
-                
+
                 // Give 2 more seconds when progress is detected
                 failureTimeout = setTimeout(() => {
                     clearInterval(emitInterval);
                     clearInterval(checkInterval);
                     isSimulating = false;
-                    
+
                     if (!goalReached) {
                         playSound('denied', 0.5);
                         showHint(`Almost there! The goal was ${Math.floor(goal.energy / goal.maxEnergy * 100)}% powered.`);
                     }
                 }, 2000);
             }
-            
+
             if (goalReached || !isSimulating) {
                 clearInterval(emitInterval);
                 clearInterval(checkInterval);
                 clearTimeout(failureTimeout);
                 isSimulating = false;
-                
+
                 if (goalReached) {
                     // Victory animation
                     if (goal) {
@@ -241,7 +241,6 @@ function selectTool(tool) {
 }
 
 function loadLevel(levelIndex) {
-
     // Reset Goal State
     goalReached = false;
     console.log('Resetting goalReached');
@@ -271,13 +270,28 @@ function loadLevel(levelIndex) {
         updateEnergyUI();
     }
 
-    // Create source
-    const source = new Component(level.source.x, level.source.y, 'source');
+    // Create source with custom connections
+    const sourceConnections = level.source.connections || null;
+    const source = new Component(level.source.x, level.source.y, 'source', sourceConnections);
+    source.isPrePlaced = true; // Sources are always pre-placed
     components.push(source);
 
-    // Create goal
-    const goal = new Component(level.goal.x, level.goal.y, 'goal');
+    // Create goal with custom connections
+    const goalConnections = level.goal.connections || null;
+    const goal = new Component(level.goal.x, level.goal.y, 'goal', goalConnections);
+    goal.isPrePlaced = true; // Goals are always pre-placed
     components.push(goal);
+
+    // Create pre-placed components
+    if (level.prePlaced) {
+        level.prePlaced.forEach(compData => {
+            // Use custom connections if provided for pre-placed components
+            const customConnections = compData.connections || null;
+            const component = new Component(compData.x, compData.y, compData.type, customConnections);
+            component.isPrePlaced = true; // Mark as immovable
+            components.push(component);
+        });
+    }
 
     // Create obstacles
     level.obstacles.forEach(([x, y]) => {
@@ -366,13 +380,13 @@ function debugGridConfig() {
     console.log(`Grid size: ${gridSize}x${gridSize}`);
     console.log(`Current level: ${currentLevel} - ${levels[currentLevel]?.name}`);
     console.log(`Current energy type: ${currentEnergyType}`);
-    
+
     // Show all components
     console.log('\nComponents:');
     components.forEach(comp => {
         console.log(`  ${comp.type} at (${comp.x}, ${comp.y}) - connections:`, comp.connections);
     });
-    
+
     // Show grid state
     console.log('\nGrid layout:');
     for (let y = gridSize - 1; y >= 0; y--) { // Start from top row
@@ -387,6 +401,9 @@ function debugGridConfig() {
                 else if (cell.type === 'corner') row += 'L ';
                 else if (cell.type === 'tjunction') row += 'T ';
                 else if (cell.type === 'cross') row += '+ ';
+                else if (cell.type === 'nervous') row += '😰 ';
+                else if (cell.type === 'sleepy') row += '😴 ';  
+                else if (cell.type === 'grumpy') row += '😠 ';
                 else row += `${cell.type[0].toUpperCase()} `;
             } else {
                 row += '. ';
@@ -394,7 +411,7 @@ function debugGridConfig() {
         }
         console.log(row);
     }
-    
+
     console.log('=== END GRID DEBUG ===\n');
 }
 

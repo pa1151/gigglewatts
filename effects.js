@@ -6,7 +6,7 @@ class Bridge {
         this.x = x;
         this.y = y;
         this.active = true;
-        
+
         const geometry = new THREE.PlaneGeometry(0.6, 0.6);
         const material = new THREE.MeshBasicMaterial({
             color: 0x4169e1,
@@ -14,19 +14,19 @@ class Bridge {
             opacity: 0.3,
             side: THREE.DoubleSide
         });
-        
+
         this.mesh = new THREE.Mesh(geometry, material);
         const worldPos = gridToWorldPosition(x, y);
         this.mesh.position.set(worldPos.x, worldPos.y, 0.2);
         this.mesh.rotation.x = -Math.PI / 2;
         scene.add(this.mesh);
-        
+
         // Fade out after duration
         setTimeout(() => {
             this.fadeOut();
         }, energyTypes.calm.bridgeDuration);
     }
-    
+
     fadeOut() {
         const fadeInterval = setInterval(() => {
             this.mesh.material.opacity -= 0.02;
@@ -52,18 +52,18 @@ function createBridge(x, y) {
 
 function createSparkle(x1, y1, x2, y2) {
     const geometry = new THREE.SphereGeometry(0.05, 6, 6);
-    const material = new THREE.MeshBasicMaterial({ 
-        color: 0xffff00, 
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
         transparent: true,
         opacity: 0.8
     });
     const sparkle = new THREE.Mesh(geometry, material);
     sparkle.position.set(x1, y1, 0.3);
     scene.add(sparkle);
-    
+
     const startTime = Date.now();
     const duration = 300;
-    
+
     const animateSparkle = () => {
         const progress = (Date.now() - startTime) / duration;
         if (progress < 1) {
@@ -82,8 +82,8 @@ function createSparkle(x1, y1, x2, y2) {
 
 function createMiniSparkle(x, y, z) {
     const geometry = new THREE.SphereGeometry(0.03, 4, 4);
-    const material = new THREE.MeshBasicMaterial({ 
-        color: 0xffff88, 
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffff88,
         transparent: true,
         opacity: 0.6
     });
@@ -91,7 +91,7 @@ function createMiniSparkle(x, y, z) {
     sparkle.position.set(x, y, z);
     scene.add(sparkle);
     sparkles.push(sparkle);
-    
+
     // Fade out
     const fadeOut = () => {
         sparkle.material.opacity -= 0.02;
@@ -109,7 +109,7 @@ function createMiniSparkle(x, y, z) {
 function createExplosion(x, y) {
     for (let i = 0; i < 8; i++) {
         const geometry = new THREE.SphereGeometry(0.05, 4, 4);
-        const material = new THREE.MeshBasicMaterial({ 
+        const material = new THREE.MeshBasicMaterial({
             color: 0xff6347,
             transparent: true,
             opacity: 0.8
@@ -117,18 +117,18 @@ function createExplosion(x, y) {
         const particle = new THREE.Mesh(geometry, material);
         particle.position.set(x, y, 0.3);
         scene.add(particle);
-        
+
         const angle = (i / 8) * Math.PI * 2;
         const speed = 0.02 + Math.random() * 0.02;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
-        
+
         const animateParticle = () => {
             particle.position.x += vx;
             particle.position.y += vy;
             particle.material.opacity -= 0.02;
             particle.scale.multiplyScalar(0.98);
-            
+
             if (particle.material.opacity > 0) {
                 requestAnimationFrame(animateParticle);
             } else {
@@ -145,15 +145,15 @@ function createFloatingText(x, y, text, color = 0xffffff, duration = 2000) {
     canvas.width = 256;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
-    
+
     ctx.font = '32px Arial';
     ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, 128, 32);
-    
+
     const texture = new THREE.CanvasTexture(canvas);
-    const spriteMaterial = new THREE.SpriteMaterial({ 
+    const spriteMaterial = new THREE.SpriteMaterial({
         map: texture,
         transparent: true
     });
@@ -161,7 +161,7 @@ function createFloatingText(x, y, text, color = 0xffffff, duration = 2000) {
     sprite.scale.set(1, 0.25, 1);
     sprite.position.set(x, y, 0.5);
     scene.add(sprite);
-    
+
     const startTime = Date.now();
     const animateText = () => {
         const progress = (Date.now() - startTime) / duration;
@@ -188,10 +188,10 @@ function createRippleEffect(x, y, color = 0x4169e1, maxRadius = 1.0) {
     ripple.position.set(x, y, 0.1);
     ripple.rotation.x = -Math.PI / 2;
     scene.add(ripple);
-    
+
     const startTime = Date.now();
     const duration = 1000;
-    
+
     const animateRipple = () => {
         const progress = (Date.now() - startTime) / duration;
         if (progress < 1) {
@@ -210,10 +210,10 @@ function createRippleEffect(x, y, color = 0x4169e1, maxRadius = 1.0) {
 function createGlowEffect(mesh, color = 0xffffff, intensity = 0.5, duration = 1000) {
     const originalEmissive = mesh.material.emissive.clone();
     const originalIntensity = mesh.material.emissiveIntensity;
-    
+
     mesh.material.emissive.setHex(color);
     mesh.material.emissiveIntensity = intensity;
-    
+
     setTimeout(() => {
         const fadeInterval = setInterval(() => {
             mesh.material.emissiveIntensity -= intensity * 0.05;
@@ -242,7 +242,7 @@ function createPulseEffect(mesh, scale = 1.2, duration = 500) {
         };
         animate();
     };
-    
+
     const pulseDown = () => {
         const startTime = Date.now();
         const animate = () => {
@@ -257,6 +257,6 @@ function createPulseEffect(mesh, scale = 1.2, duration = 500) {
         };
         animate();
     };
-    
+
     pulseUp();
 }

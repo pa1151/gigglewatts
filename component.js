@@ -1,6 +1,6 @@
 // Component class with personalities
 class Component {
-    constructor(x, y, type) {
+    constructor(x, y, type, customConnections = null) {
         this.x = x;
         this.y = y;
         this.type = type;
@@ -8,12 +8,16 @@ class Component {
         this.energy = 0;
         this.mood = 'neutral';
         this.personality = componentPersonalities[type] || null;
-        this.connections = this.getDefaultConnections();
+        
+        // Use custom connections if provided, otherwise use defaults
+        this.connections = customConnections || this.getDefaultConnections();
+
         this.isBlocking = false;
         this.moodStability = 0;
         this.maxEnergy = this.type === 'goal' ? 2.0 : 1.0;
         this.burnedOut = false;
-        
+        this.isPrePlaced = false; // Track if component is pre-placed (immovable)
+
         // Create 3D representation
         this.createMesh();
         this.updatePosition();
@@ -176,7 +180,7 @@ class Component {
         const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
         const sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(0.75, 0.75, 1);
-        sprite.position.z = 0.2;
+        sprite.position.z = 0.25;
         group.add(sprite);
         
         this.emojiSprite = sprite;
@@ -247,8 +251,10 @@ class Component {
     }
     
     rotate() {
-        if (this.type === 'source' || this.type === 'goal') return;
-        console.log(`Component:  ${this.type} \n Angle: ${this.rotation}`)
+        // Don't allow rotation of source, goal, or pre-placed components
+        if (this.type === 'source' || this.type === 'goal' || this.isPrePlaced) return;
+        
+        console.log(`Component: ${this.type} \n Angle: ${this.rotation}`)
         
         this.rotation = (this.rotation + 90) % 360;
         this.mesh.rotation.z = this.rotation * Math.PI / 180;
@@ -259,13 +265,6 @@ class Component {
         this.connections.right = this.connections.bottom;
         this.connections.bottom = this.connections.left;
         this.connections.left = temp;
-        
-        // Update connection mesh references
-        const tempMesh = this.connections.top;
-        this.connections.top = this.connections.right;
-        this.connections.right = this.connections.bottom;
-        this.connections.bottom = this.connections.left;
-        this.connections.left = tempMesh;
         
         // Giggle animation
         this.giggle();
@@ -420,7 +419,7 @@ class Component {
     
     canConnect(direction, energyType = null) {
         // Special case: nervous components allow calm energy even when blocking
-        if (this.type === 'nervous' && energyType === 'calm') {
+        if ((this.type === 'nervous' && energyType === 'calm') || (this.type === 'sleepy' && energyType === 'excited')) {
             return this.connections[direction];
         }
         

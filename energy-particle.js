@@ -20,7 +20,7 @@ class EnergyParticle {
         this.createParticleEffects();
 
         // Improved logging with particle ID
-        this.log(`Created at (${x}, ${y}) going ${direction}`);
+        console.log(`Created at (${x}, ${y}) going ${direction}`);
     }
 
     createMesh() {
@@ -64,13 +64,13 @@ class EnergyParticle {
 
     updateWorldPosition() {
         const basePos = gridToWorldPosition(this.gridX, this.gridY);
-        
+
         // Calculate movement offset based on progress
         const offset = this.calculateMovementOffset();
-        
+
         // Calculate type-specific effects
         const effects = this.calculateTypeEffects();
-        
+
         // Apply position
         this.mesh.position.set(
             basePos.x + offset.x + effects.x,
@@ -85,21 +85,21 @@ class EnergyParticle {
     calculateMovementOffset() {
         const distance = this.progress * cellSize;
         const offset = { x: 0, y: 0 };
-        
+
         switch (this.direction) {
             case 'up': offset.y = distance; break;
             case 'down': offset.y = -distance; break;
             case 'left': offset.x = -distance; break;
             case 'right': offset.x = distance; break;
         }
-        
+
         return offset;
     }
 
     calculateTypeEffects() {
         const effects = { x: 0, y: 0, z: 0 };
         const time = Date.now();
-        
+
         switch (this.type) {
             case 'happy':
                 effects.z = Math.sin(time * this.bounceFrequency + this.bounceOffset) * 0.1;
@@ -116,7 +116,7 @@ class EnergyParticle {
                 this.mesh.scale.setScalar(1 + pulse * 0.1); // Gentle scaling
                 break;
         }
-        
+
         return effects;
     }
 
@@ -130,7 +130,7 @@ class EnergyParticle {
                 break;
             case 'excited':
                 if (Math.random() < 0.1) {
-                    createEnergyBurst(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
+                    createSparkle(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
                 }
                 break;
         }
@@ -168,9 +168,9 @@ class EnergyParticle {
 
     moveToNextCell() {
         const nextPos = getNextGridPosition(this.gridX, this.gridY, this.direction);
-        
-        this.log(`Moving ${this.direction} from (${this.gridX}, ${this.gridY}) to (${nextPos.x}, ${nextPos.y})`);
-        
+
+        console.log(`Moving ${this.direction} from (${this.gridX}, ${this.gridY}) to (${nextPos.x}, ${nextPos.y})`);
+
         // Comprehensive bounds checking
         if (!this.isValidMove(nextPos)) {
             this.handleBoundaryHit();
@@ -191,7 +191,7 @@ class EnergyParticle {
     }
 
     handleBoundaryHit() {
-        this.log(`Hit boundary, dying`);
+        console.log(`Hit boundary, dying`);
         this.life = 0;
     }
 
@@ -206,6 +206,7 @@ class EnergyParticle {
     handleObstacle(obstacle, nextPos) {
         // Check if calm energy can bridge over obstacle
         if (this.type === 'calm' && energyTypes.calm.canBridge) {
+            console.log(`Creating bridge over obstacle at (${nextPos.x}, ${nextPos.y})`);
             this.createBridgeAndContinue(nextPos);
             return;
         }
@@ -214,34 +215,35 @@ class EnergyParticle {
         if (this.canPowerThrough()) {
             this.powerThroughObstacle(nextPos);
         } else {
-            this.log(`Blocked by obstacle at (${nextPos.x}, ${nextPos.y})`);
+            console.log(`Blocked by obstacle at (${nextPos.x}, ${nextPos.y})`);
             this.life = 0;
         }
     }
 
+
     canPowerThrough() {
-        return this.type === 'excited' && 
-               energyTypes.excited.canPowerThrough && 
-               Math.random() < 0.3;
+        return this.type === 'excited' &&
+            energyTypes.excited.canPowerThrough &&
+            Math.random() < 0.3;
     }
 
     powerThroughObstacle(nextPos) {
         this.life *= 0.5;
         this.gridX = nextPos.x;
         this.gridY = nextPos.y;
-        
+
         const worldPos = gridToWorldPosition(nextPos.x, nextPos.y);
         createExplosion(worldPos.x, worldPos.y);
-        this.log(`Powered through obstacle!`);
+        console.log(`Powered through obstacle!`);
     }
 
     handleComponent(component, nextPos) {
         const enterDirection = getOppositeDirection(this.direction);
         
-        if (component.canConnect(enterDirection, this.type)) {
+        if (component.canConnect(enterDirection)) {
             this.enterComponent(component, nextPos);
         } else {
-            this.log(`Cannot enter ${component.type} from ${enterDirection}`);
+            console.log(`Cannot enter ${component.type} from ${enterDirection}`);
             this.life = 0;
         }
     }
@@ -251,22 +253,120 @@ class EnergyParticle {
         const energyTransfer = this.calculateEnergyTransfer();
         component.energy = Math.min(component.energy + energyTransfer, component.maxEnergy);
         
-        this.log(`Entering ${component.type}, transferring ${energyTransfer.toFixed(2)} energy`);
+        console.log(`Entering ${component.type}, transferring ${energyTransfer.toFixed(2)} energy`);
         
         // Update component mood and handle special cases
         component.updateMood(this.type, this.type);
+        
+        // Handle energy conversion for personality components
+        const convertedType = this.handleEnergyConversion(component);
+        
         this.handleSpecialComponentEffects(component, nextPos);
         
         // Goal components absorb particles - don't route through them
         if (component.type === 'goal') {
-            this.log(`Absorbed by goal component`);
+            console.log(`Absorbed by goal component`);
             this.life = 0; // Particle stops here
             return;
         }
         
         // Route through the component for non-goal components
+        // Use converted energy type if conversion occurred
+        if (convertedType && convertedType !== this.type) {
+            this.convertToNewType(convertedType);
+        }
+        
         this.routeThrough(component, nextPos.x, nextPos.y);
     }
+
+    handleEnergyConversion(component) {
+        // Only personality components can convert energy
+        if (!component.personality) {
+            return null;
+        }
+        
+        // Check if the component is satisfied with the current energy type
+        const isHappy = (this.type === component.personality.requiredMood);
+        
+        if (isHappy) {
+            // Component is satisfied - determine output energy type
+            let outputType = null;
+            
+            switch (component.type) {
+                case 'sleepy':
+                    // Sleepy component converts excited energy to happy energy
+                    if (this.type === 'excited') {
+                        outputType = 'happy';
+                        console.log(`Sleepy component converting excited energy to happy energy`);
+                        
+                        // Create visual effect for conversion
+                        const worldPos = gridToWorldPosition(component.x, component.y);
+                        createFloatingText(worldPos.x, worldPos.y, "😊", 0xffd700, 1500);
+                    }
+                    break;
+                    
+                case 'nervous':
+                    // Nervous component converts calm energy to excited energy
+                    if (this.type === 'calm') {
+                        outputType = 'excited';
+                        console.log(`Nervous component converting calm energy to excited energy`);
+                        
+                        // Create visual effect for conversion
+                        const worldPos = gridToWorldPosition(component.x, component.y);
+                        createFloatingText(worldPos.x, worldPos.y, "⚡", 0xff6347, 1500);
+                    }
+                    break;
+                    
+                case 'grumpy':
+                    // Grumpy component converts happy energy to calm energy
+                    if (this.type === 'happy') {
+                        outputType = 'calm';
+                        console.log(`Grumpy component converting happy energy to calm energy`);
+                        
+                        // Create visual effect for conversion
+                        const worldPos = gridToWorldPosition(component.x, component.y);
+                        createFloatingText(worldPos.x, worldPos.y, "🧘", 0x4169e1, 1500);
+                    }
+                    break;
+            }
+            
+            return outputType;
+        }
+        
+        return null;
+    }    
+
+    convertToNewType(newType) {
+        console.log(`Converting from ${this.type} to ${newType}`);
+        
+        // Update particle type
+        this.type = newType;
+        
+        // Update visual properties
+        this.mesh.material.color.setHex(energyTypes[newType].color);
+        this.mesh.material.emissive.setHex(energyTypes[newType].color);
+        
+        // Update particle effects for new type
+        this.createParticleEffects();
+        
+        // Play conversion sound effect
+        this.playConversionSound(newType);
+    }
+
+    // Play conversion sound
+    playConversionSound(newType) {
+        switch (newType) {
+            case 'happy':
+                playSound('happyChime', 0.2, 1.2);
+                break;
+            case 'calm':
+                playSound('calmHum', 0.2, 0.8);
+                break;
+            case 'excited':
+                playSound('excitedZap', 0.2, 1.0);
+                break;
+        }
+    }    
 
     calculateEnergyTransfer() {
         const baseTransfer = {
@@ -282,7 +382,7 @@ class EnergyParticle {
         if (component.type === 'goal') {
             this.handleGoalComponent(component);
         }
-        
+
         // Handle burnout risk
         if (this.shouldCheckBurnout(component)) {
             this.checkComponentBurnout(component);
@@ -290,34 +390,38 @@ class EnergyParticle {
     }
 
     handleGoalComponent(component) {
-        this.log(`Goal energy: ${component.energy.toFixed(2)}/${component.maxEnergy}`);
+        console.log(`Goal energy: ${component.energy.toFixed(2)}/${component.maxEnergy}`);
         component.updatePowerMeter();
-        
+
         if (component.energy >= component.maxEnergy * 0.95) {
-            this.log("GOAL REACHED!");
+            console.log("GOAL REACHED!");
             goalReached = true;
         }
     }
 
     shouldCheckBurnout(component) {
-        return component.type !== 'goal' && 
-               component.type !== 'source' &&
-               this.type === 'excited' && 
-               component.energy > 0.9;
+        if (this.type === 'sleepy') {
+            return false;
+        } else {
+        return component.type !== 'goal' &&
+            component.type !== 'source' &&
+            this.type === 'excited' &&
+            component.energy > 0.9;
+        }
     }
-
+    
     checkComponentBurnout(component) {
         if (Math.random() < 0.3) {
             component.burnedOut = true;
             component.material.color.setHex(0x222222);
             component.material.emissive.setHex(0x440000);
             component.material.emissiveIntensity = 0.5;
-            
+
             const worldPos = gridToWorldPosition(component.x, component.y);
             createExplosion(worldPos.x, worldPos.y);
             playSound('burnout', 0.5);
-            
-            this.log(`Component burned out!`);
+
+            console.log(`Component burned out!`);
         }
     }
 
@@ -327,7 +431,7 @@ class EnergyParticle {
         } else if (this.canUseBridge(nextPos)) {
             this.useBridge(nextPos);
         } else {
-            this.log(`No path available at (${nextPos.x}, ${nextPos.y})`);
+            console.log(`No path available at (${nextPos.x}, ${nextPos.y})`);
             this.life = 0;
         }
     }
@@ -337,10 +441,17 @@ class EnergyParticle {
     }
 
     createBridgeAndContinue(nextPos) {
+        // Create bridge at obstacle location
         createBridge(nextPos.x, nextPos.y);
+        
+        // Move to the bridged position
         this.gridX = nextPos.x;
         this.gridY = nextPos.y;
-        this.log(`Created bridge at (${nextPos.x}, ${nextPos.y})`);
+        
+        // Reduce energy for bridging effort
+        this.life *= 0.9;
+        
+        console.log(`Created bridge and moved to (${nextPos.x}, ${nextPos.y})`);
     }
 
     canUseBridge(nextPos) {
@@ -350,14 +461,14 @@ class EnergyParticle {
     useBridge(nextPos) {
         this.gridX = nextPos.x;
         this.gridY = nextPos.y;
-        this.log(`Using bridge at (${nextPos.x}, ${nextPos.y})`);
+        console.log(`Using bridge at (${nextPos.x}, ${nextPos.y})`);
     }
 
     routeThrough(component, x, y) {
         const availableExits = this.findAvailableExits(component);
         
         if (availableExits.length === 0) {
-            this.log(`No exits available from ${component.type}`);
+            console.log(`No exits available from ${component.type}`);
             this.life = 0;
             return;
         }
@@ -369,26 +480,29 @@ class EnergyParticle {
         const exits = [];
         const entryDir = getOppositeDirection(this.direction);
         
-        const connectionMap = {
+        // Map directions to connection properties
+        const directionMap = {
             'up': 'top',
-            'down': 'bottom',
+            'down': 'bottom', 
             'left': 'left',
             'right': 'right'
         };
 
-        Object.entries(connectionMap).forEach(([direction, connection]) => {
-            if (component.connections[connection] && entryDir !== connection) {
+        // Check each direction for available exits
+        Object.entries(directionMap).forEach(([direction, connectionKey]) => {
+            // Don't exit the way we came in
+            if (connectionKey !== entryDir && component.connections[connectionKey]) {
                 exits.push(direction);
             }
         });
 
-        this.log(`Available exits from ${component.type}: [${exits.join(', ')}]`);
+        console.log(`Available exits from ${component.type}: [${exits.join(', ')}]`);
         return exits;
     }
 
     handleRouting(component, exits, x, y) {
         const shouldSplit = this.shouldSplitPath(component, exits);
-        
+
         if (shouldSplit) {
             this.splitIntoMultiplePaths(exits, x, y);
         } else {
@@ -397,13 +511,13 @@ class EnergyParticle {
     }
 
     shouldSplitPath(component, exits) {
-        return (component.type === 'cross') || 
-               (this.type === 'happy' && energyTypes.happy.canSpreadJoy && exits.length > 1);
+        return (component.type === 'cross') || (component.type === 'tjunction') || (component.type = 'corner') || 
+            (this.type === 'happy' && energyTypes.happy.canSpreadJoy && exits.length > 1);
     }
 
     splitIntoMultiplePaths(exits, x, y) {
-        this.log(`Splitting into ${exits.length} paths`);
-        
+        console.log(`Splitting into ${exits.length} paths`);
+
         exits.forEach((dir, index) => {
             if (index === 0) {
                 // Current particle continues in first direction
@@ -425,7 +539,7 @@ class EnergyParticle {
         this.direction = direction;
         this.gridX = x;
         this.gridY = y;
-        this.log(`Continuing ${direction}`);
+        console.log(`Continuing ${direction}`);
     }
 
     // Improved logging with particle ID and timestamp
@@ -438,16 +552,16 @@ class EnergyParticle {
     destroy() {
         if (this.mesh) {
             scene.remove(this.mesh);
-            
+
             // Dispose of material to prevent memory leaks
             if (this.mesh.material) {
                 this.mesh.material.dispose();
             }
-            
+
             this.mesh = null;
         }
-        
-        this.log(`Destroyed`);
+
+        console.log(`Destroyed`);
     }
 }
 
